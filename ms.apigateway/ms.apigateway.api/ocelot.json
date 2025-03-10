@@ -107,7 +107,7 @@
     // Tasks
     // Get All User Tasks
     {
-      "DownstreamPathTemplate": "/tasks/",
+      "DownstreamPathTemplate": "/tasks",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
@@ -115,7 +115,7 @@
           "Port": 8020
         }
       ],
-      "UpstreamPathTemplate": "/tasks/",
+      "UpstreamPathTemplate": "/tasks",
       "UpstreamHttpMethod": [ "GET" ],
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer"
@@ -149,7 +149,7 @@
     },
     // Create Task
     {
-      "DownstreamPathTemplate": "/tasks/",
+      "DownstreamPathTemplate": "/tasks",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
@@ -157,7 +157,7 @@
           "Port": 8020
         }
       ],
-      "UpstreamPathTemplate": "/tasks/",
+      "UpstreamPathTemplate": "/tasks",
       "UpstreamHttpMethod": [ "POST" ],
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer"

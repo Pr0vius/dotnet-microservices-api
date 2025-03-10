@@ -10,11 +10,11 @@ namespace ms.task.api.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class TasksContoller : ControllerBase
+    public class TasksController : ControllerBase
     {
         private readonly IMediator _mediator;
 
-        public TasksContoller(IMediator mediator)
+        public TasksController(IMediator mediator)
         {
             _mediator = mediator;
         }
@@ -27,17 +27,7 @@ namespace ms.task.api.Controllers
 
             return Ok(await _mediator.Send(new GetAllTasksQuery(userId)));
         }
-
-        [HttpGet]
-        [Authorize]
-        [Route("/{TaskId}")]
-        public async Task<IActionResult> GetById(Guid TaskId)
-        {
-            var userId = GetUserId();
-
-            return Ok(await _mediator.Send(new GetTaskByIdQuery(userId, TaskId)));
-        }
-
+        
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> CreateTask([FromBody] CreateTaskRequest taskRequest)
@@ -47,9 +37,18 @@ namespace ms.task.api.Controllers
 
         }
 
-        [HttpPut]
+        [HttpGet("{TaskId:guid}")]
         [Authorize]
-        [Route("/{TaskId}")]
+        public async Task<IActionResult> GetById(Guid TaskId)
+        {
+            var userId = GetUserId();
+
+            return Ok(await _mediator.Send(new GetTaskByIdQuery(userId, TaskId)));
+        }
+
+
+        [HttpPut("{TaskId:guid}")]
+        [Authorize]
         public async Task<IActionResult> UpdateTask(Guid TaskId)
         {
             var userId = GetUserId();
@@ -57,9 +56,8 @@ namespace ms.task.api.Controllers
 
         }
 
-        [HttpDelete]
+        [HttpDelete("{TaskId:guid}")]
         [Authorize]
-        [Route("/{TaskId}")]
         public async Task<IActionResult> DeleteTask(Guid TaskId)
         {
             var userId = GetUserId();
