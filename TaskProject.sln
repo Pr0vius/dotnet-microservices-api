@@ -14,6 +14,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ms.auth.api", "ms.auth\ms.auth.api\ms.auth.api.csproj", "{44AA5C0E-C709-4E65-8FC7-A464330EF2DA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ms.task", "ms.task", "{29E77BF2-7E99-4A63-8EE4-AA00415063CA}"
+	ProjectSection(SolutionItems) = preProject
+		ms.user\ms.user.api\nlog.config = ms.user\ms.user.api\nlog.config
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ms.task.api", "ms.task\ms.task.api\ms.task.api.csproj", "{3E03B7CF-DE9C-4946-9C49-0F08E1A28C16}"
 EndProject

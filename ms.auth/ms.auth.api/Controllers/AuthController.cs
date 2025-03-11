@@ -1,8 +1,10 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using ms.auth.api.Responses;
 using ms.auth.application.Commands;
 using ms.auth.application.Queries;
 using ms.auth.application.Requests;
+using System.Net;
 
 namespace ms.auth.api.Controllers
 {
@@ -21,14 +23,28 @@ namespace ms.auth.api.Controllers
         [Consumes("application/json", "text/plain", "multipart/form-data")]
         public async Task<IActionResult> Login([FromBody] AccountRequest account)
         {
-            return Ok(await _mediator.Send(new GetAuthenticationTokenQuery(account.UserName, account.Password)));
+            try
+            {
+                var token = await _mediator.Send(new GetAuthenticationTokenQuery(account.UserName, account.Password));
+                return ApiResponse<object>.Success(new { token }, "Logged in succesfully", HttpStatusCode.OK);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
 
         [HttpPost]
         [Route("[action]")]
         public async Task<IActionResult> Register([FromBody] CreateAccountRequest accountRequest)
         {
-            return Ok(await _mediator.Send(new CreateAuthAccountCommand(accountRequest.UserName, accountRequest.Password, accountRequest.Email)));
+            try
+            {
+                var token = await _mediator.Send(new CreateAuthAccountCommand(accountRequest.UserName, accountRequest.Password, accountRequest.Email));
+                return ApiResponse<object>.Success(new { token }, "Registration succesfull", HttpStatusCode.Created);
+
+            }
+            catch (Exception ex) { throw; }
         }
     }
 }

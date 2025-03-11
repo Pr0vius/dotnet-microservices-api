@@ -7,35 +7,46 @@ using ms.task.domain.Interfaces;
 using ms.task.infrastructure.Data;
 using ms.task.infrastructure.Repositories;
 using ms.task.application.Queries;
+using NLog.Web;
+using NLog;
 
-var builder = WebApplication.CreateBuilder(args);
 
-var privateKey = builder.Configuration.GetValue<string>("JWT:PrivateKey")!;
+var logger = LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
 
-builder.Services.AddDbContext<TasksDBContext>(options =>
+try
+{
+    logger.Info("Stating Tasks Microservice...");
+    var builder = WebApplication.CreateBuilder(args);
+
+    var privateKey = builder.Configuration.GetValue<string>("JWT:PrivateKey")!;
+
+    builder.Logging.ClearProviders();
+    builder.Host.UseNLog();
+
+    builder.Services.AddDbContext<TasksDBContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddScoped<ITaskRepository, TaskRepository>();
+    builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 
 
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Auth Api Documentation", Version = "v1" });
-
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    builder.Services.AddControllers();
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(c =>
     {
-        Name = "Authorization",
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Ingrese el token JWT en el siguiente formato: Bearer {token}"
-    });
+        c.SwaggerDoc("v1", new OpenApiInfo { Title = "Auth Api Documentation", Version = "v1" });
 
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
+        c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.ApiKey,
+            Scheme = "Bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description = "Ingrese el token JWT en el siguiente formato: Bearer {token}"
+        });
+
+        c.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
         {
             new OpenApiSecurityScheme
             {
@@ -47,60 +58,73 @@ builder.Services.AddSwaggerGen(c =>
             },
             Array.Empty<string>()
         }
+        });
     });
-});
 
-builder.Services.AddAuthentication(opt =>
-{
-    opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(opt =>
-{
-    opt.RequireHttpsMetadata = false;
-    opt.TokenValidationParameters = new TokenValidationParameters
+    builder.Services.AddAuthentication(opt =>
     {
-        ValidateAudience = false,
-        ValidateIssuer = false,
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(privateKey)),
-        ValidateLifetime = true,
-        RequireExpirationTime = true,
-        ClockSkew = TimeSpan.Zero
-    };
-});
-
-builder.Services.AddMediatR(cfg =>
-{
-    cfg.RegisterServicesFromAssemblies(typeof(GetAllTasksQuery).Assembly);
-});
-
-var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    try
+        opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    }).AddJwtBearer(opt =>
     {
-        var context = services.GetRequiredService<TasksDBContext>();
-        context.Database.Migrate();
+        opt.RequireHttpsMetadata = false;
+        opt.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateAudience = false,
+            ValidateIssuer = false,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(privateKey)),
+            ValidateLifetime = true,
+            RequireExpirationTime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
+    builder.Services.AddMediatR(cfg =>
+    {
+        cfg.RegisterServicesFromAssemblies(typeof(GetAllTasksQuery).Assembly);
+    });
+
+    var app = builder.Build();
+
+    if (app.Environment.IsDevelopment())
+    {
+        logger.Info("App in dev mode");
+        app.UseSwagger();
+        app.UseSwaggerUI();
     }
-    catch (Exception ex)
+
+    using (var scope = app.Services.CreateScope())
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Error appliying the migrations");
+        var services = scope.ServiceProvider;
+        try
+        {
+            var context = services.GetRequiredService<TasksDBContext>();
+            context.Database.Migrate();
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, "Error appliying migrations");
+        }
     }
+
+
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    app.MapControllers();
+
+    logger.Info("Application started sucessfully");
+    app.Run();
+
 }
+catch (Exception ex)
+{
+    logger.Fatal(ex, "Critical Error on application startup");
 
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();
+    throw;
+}
+finally
+{
+    LogManager.Shutdown();
+}

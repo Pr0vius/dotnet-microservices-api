@@ -9,17 +9,13 @@ using System.Text.Json;
 
 namespace ms.user.api.Consumers
 {
-    public class UsersConsumer : IConsumer
+    public class UsersConsumer(IServiceProvider serviceProvider, IConfiguration configuration) : IConsumer
     {
-        private IConnection _connection;
-        private readonly IConfiguration _configuration;
-        private readonly IServiceProvider _serviceProvider;
+        private IConnection? _connection;
+        private readonly IConfiguration _configuration = configuration;
+        private readonly IServiceProvider _serviceProvider = serviceProvider;
 
-        public UsersConsumer(IServiceProvider serviceProvider, IConfiguration configuration)
-        {
-            _serviceProvider = serviceProvider;
-            _configuration = configuration;
-        }
+
 
         public async Task Subscribe()
         {
@@ -55,7 +51,10 @@ namespace ms.user.api.Consumers
             }
         }
 
-        public void Unsubscribe() => _connection.Dispose();
+        public void Unsubscribe()
+        {
+            if (_connection != null) _connection.Dispose();
+        }
 
         private async Task ReceivedEvent(object sender, BasicDeliverEventArgs ea)
         {
