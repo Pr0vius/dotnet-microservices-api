@@ -9,9 +9,10 @@ using ms.task.infrastructure.Repositories;
 using ms.task.application.Queries;
 using NLog.Web;
 using NLog;
+using ms.task.api.Middlewares;
 
 
-var logger = LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
+var logger = LogManager.Setup().LoadConfigurationFromFile("nlog.config").GetCurrentClassLogger();
 
 try
 {
@@ -85,6 +86,14 @@ try
         cfg.RegisterServicesFromAssemblies(typeof(GetAllTasksQuery).Assembly);
     });
 
+    builder.Services.AddCors(opt =>
+    {
+        opt.AddPolicy("AllowGatewayOrigin", builder =>
+        {
+            builder.WithOrigins("https://localhost:8031").AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+        });
+    });
+
     var app = builder.Build();
 
     if (app.Environment.IsDevelopment())
@@ -93,6 +102,18 @@ try
         app.UseSwagger();
         app.UseSwaggerUI();
     }
+
+    app.Map("/{*url}", context =>
+    {
+        context.Response.StatusCode = 404;
+        context.Response.ContentType = "application/json";
+        var response = new
+        {
+            message = "Endpoint not found",
+            statusCode = 404
+        };
+        return context.Response.WriteAsJsonAsync(response);
+    });
 
     using (var scope = app.Services.CreateScope())
     {
@@ -108,6 +129,8 @@ try
         }
     }
 
+    app.UseMiddleware<RequestLoggingMiddleware>();
+    app.UseMiddleware<ExceptionHandlingMiddleware>();
 
     app.UseAuthentication();
     app.UseAuthorization();

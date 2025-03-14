@@ -11,6 +11,7 @@ using ms.auth.domain.Interfaces;
 using ms.auth.infrastructure.Data;
 using ms.auth.infrastructure.Repositories;
 using ms.rabbitmq.Producers;
+using ms.auth.api.Middlewares;
 
 var logger = LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
 
@@ -91,11 +92,9 @@ try
 
     builder.Services.AddCors(opt =>
     {
-        opt.AddPolicy("AllowAnyOrigin", builder =>
+        opt.AddPolicy("AllowGatewayOrigin", builder =>
         {
             builder.WithOrigins("https://localhost:8031").AllowAnyHeader().AllowAnyMethod().AllowCredentials();
-            builder.WithOrigins("https://localhost:3000").AllowAnyHeader().AllowAnyMethod().AllowCredentials();
-            builder.WithOrigins("https://localhost:5285").AllowAnyHeader().AllowAnyMethod().AllowCredentials();
         });
     });
 
@@ -142,6 +141,9 @@ try
     app.UseAuthorization();
 
     app.MapControllers();
+
+    app.UseMiddleware<RequestLoggingMiddleware>();
+    app.UseMiddleware<ExceptionHandlingMiddleware>();
 
     logger.Info("Application started sucessfully");
     app.Run();
